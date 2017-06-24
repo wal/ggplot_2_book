@@ -1,0 +1,73 @@
+---
+title: "3_4 Annotations"
+author: "Wal McConnell"
+date: "18 June 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+```
+
+## 3.4 Annotations
+
+
+```{r}
+p <- ggplot(economics, aes(date, unemploy))
+plot(p + geom_line())
+```
+```{r}
+p <- ggplot(economics)
+presidential_party_periods <- geom_rect(aes(xmin = start, xmax = end, fill = party), 
+                                  ymin = -Inf, ymax = Inf, alpha = 0.2,
+                                  data = presidential)
+elections <- geom_vline(
+  aes(xintercept = as.numeric(start)),
+      data = presidential,
+      color = "grey50",
+      alpha = 0.5
+    )
+
+presidents <- geom_text(
+  aes(x = start, y = 2500, label = name),
+  data = presidential,
+  size = 3, vjust = 0, hjust = 0, nudge_x = 50, angle = 90)
+
+unemployment <- geom_line(aes(date, unemploy))
+
+
+plot(p + presidential_party_periods + elections + presidents + unemployment + scale_fill_manual(values = c("blue", "red")))
+```
+
+```{r}
+
+yrng <- range(economics$unemploy)
+xrng <- range(economics$date)
+caption <- paste(strwrap("Unemployment rates in the US have
+  varied a lot over the years", 40), collapse = "\n")
+p <- ggplot(economics, aes(date, unemploy))
+plot(p + 
+  geom_line() +
+  geom_text(
+    aes(x, y, label = caption),
+    data = data.frame(x = xrng[1], y = yrng[2], caption = caption),
+    hjust = 0, vjust = 1, size = 4
+))
+```
+
+```{r}
+p <- ggplot(economics, aes(date, unemploy))
+plot(p + 
+  geom_line() +
+  annotate("text", x = xrng[1], y = yrng[2], label = caption,
+    hjust = 0, vjust = 1, size = 4
+  ))
+```
+
+```{r}
+mod_coef <- coef(lm(log10(price) ~ log10(carat), data = diamonds))
+p <- ggplot(diamonds, aes(log10(carat), log10(price)))
+plot(p + geom_bin2d() + geom_abline(intercept = mod_coef[1], slope = mod_coef[2], colour = "white", size = 1) + facet_wrap(~cut, nrow = 1))
+
+```

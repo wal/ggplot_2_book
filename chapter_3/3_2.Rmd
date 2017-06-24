@@ -1,0 +1,89 @@
+---
+title: "3_2 Basic Plots"
+author: "Wal McConnell"
+date: "18 June 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+df <- data.frame(
+  x = c(3,1,5),
+  y = c(2,4,6),
+  label = c("a", "b", "c")
+)
+p <- ggplot(df, aes(x,y, label = label)) +
+  labs(x=NULL, y = NULL) + # Hide Axis Labels
+  theme(plot.title = element_text(size = 20))
+```
+
+## 3.2 Basic Plot Types
+
+```{r}
+plot(p + geom_point() + ggtitle('Point'))
+```
+```{r}
+plot(p + geom_text() + ggtitle('Text'))
+```
+
+```{r}
+plot(p + geom_bar(stat = "identity") + ggtitle('Bar'))
+```
+
+```{r}
+plot(p + geom_tile() + ggtitle('Raster'))
+```
+### What does Raster mean ? 
+
+```{r}
+plot(p + geom_line() + ggtitle('Line'))
+```
+
+```{r}
+plot(p + geom_area() + ggtitle('Area'))
+```
+
+```{r}
+plot(p + geom_path() + ggtitle('Path'))
+```
+
+```{r}
+plot(p + geom_polygon() + ggtitle('Polygon?'))
+```
+
+## Exercises 3.2.1
+
+### Question 1 - Chart Types
+#### Pie Chart?
+```{r}
+plot(p + geom_bar(width = 1, stat = "identity") + ggtitle('Bar'))
+```
+
+```{r}
+p <- ggplot(df, aes(x = "",y,label = label)) +
+  labs(x=NULL, y = NULL) + # Hide Axis Labels
+  theme(plot.title = element_text(size = 20))
+plot(p + geom_bar(width = 1, stat = "identity") + coord_polar("x", start = 0) + ggtitle('Pie'))
+```
+
+
+### Question 2 geom_path v geom_polygon
+
+geom_path connects the observations in the order in which they appear in the data. 
+geom_line connects them in order of the variable on the x axis. 
+geom_step() creates a stairstep plot, highlighting exactly when changes occur. The group aesthetic determines which cases are connected together.
+
+
+Polygons are very similar to paths (as drawn by geom_path) except that the start and end points are connected and the inside is coloured by fill. The group aesthetic determines which cases are connected together into a polygon.
+
+### Question 3
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) + geom_point() + geom_smooth() # method = loess
+```
+
+
+geom_smooth = geom_area + geom_line ? 
+geom_boxplot = 
+
