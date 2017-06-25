@@ -1,0 +1,169 @@
+---
+title: "Movies"
+author: "Wal McConnell"
+date: "24 June 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggplot2movies)
+library(precis)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Movies dataset
+
+A data frame with 28819 rows and 24 variables
+
+* title. Title of the movie.
+* year. Year of release.
+* budget. Total budget (if known) in US dollars
+* length. Length in minutes.
+* rating. Average IMDB user rating.
+* votes. Number of IMDB users who rated this movie.
+* r1-10. Multiplying by ten gives percentile (to nearest 10%) of users who rated this movie a 1.
+* mpaa. MPAA rating.
+* action, animation, comedy, drama, documentary, romance, short. Binary variables representing if movie was classified as belonging to that genre.
+
+Movies were selected for inclusion if they had a known length and had been rated by at least one imdb user.
+
+
+```{r}
+precis(movies)
+```
+
+
+```{r}
+head(movies)
+```
+
+Prepare per type filtered data sets
+
+```{r}
+action_movies <- movies %>% filter(Action == 1)
+comedy_movies <- movies %>% filter(Comedy == 1)
+drama_movies <- movies %>% filter(Drama == 1)
+documentary_movies <- movies %>% filter(Documentary == 1)
+romance_movies <- movies %>% filter(Romance == 1)
+short_movies <- movies %>% filter(Short == 1)
+```
+
+## Questions
+
+### What is the growth in the number of movies over time ?
+
+```{r}
+movie_count_by_year <- function(movie_data) {
+  summarized_data <- movie_data %>% group_by(year) %>% 
+    summarize(movies_count = sum(n())) %>% 
+    select(year, movies_count)
+  
+  return(summarized_data)
+}
+
+movies_by_year <- movie_count_by_year(movies)
+
+ggplot(movies_by_year, aes(year, movies_count)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE) +
+  labs(x = "Year", y = "Number of Movies")
+
+action_movies_by_year <- movie_count_by_year(action_movies)
+comedy_movies_by_year <- movie_count_by_year(comedy_movies)
+drama_movies_by_year <- movie_count_by_year(drama_movies)
+documentary_movies_by_year <- movie_count_by_year(documentary_movies)
+romance_movies_by_year <- movie_count_by_year(romance_movies)
+short_movies_by_year <- movie_count_by_year(short_movies)
+
+ggplot() + 
+  geom_smooth(data = action_movies_by_year, se = FALSE, aes(x = year, y = movies_count, color = "Action")) + 
+  geom_smooth(data = comedy_movies_by_year, se = FALSE, aes(x = year, y = movies_count, color = "Comedy")) + 
+  geom_smooth(data = drama_movies_by_year, se = FALSE, aes(x = year, y = movies_count, color = "Drama")) + 
+  geom_smooth(data = documentary_movies_by_year, se = FALSE, aes(x = year, y = movies_count, color = "Documentary")) + 
+  geom_smooth(data = romance_movies_by_year, se = FALSE, aes(x = year, y = movies_count, color = "Romance")) + 
+  geom_smooth(data = romance_movies_by_year, se = FALSE, aes(x = year, y = movies_count, color = "Short")) + 
+  geom_smooth(data = movies_by_year, se = FALSE, aes(x = year, y = movies_count, color = "Total")) + 
+
+  labs(x = "Year", y = "Number of Movies") +
+  ggtitle("movies per year")
+
+
+```
+
+
+### Are movie titles getting longer ?
+
+```{r}
+library(stringr)
+movie_title_summary <- movies %>% 
+  group_by(year) %>% 
+  summarise(mean_title_length = mean(str_length(title)), max_title_length = max(str_length(title)))
+
+ggplot(movie_title_summary) + 
+  geom_smooth(aes(year, mean_title_length, color = "Mean title length")) +
+  geom_smooth(aes(year, max_title_length, color = "Max title length")) +
+  labs(x = "Year" , y = "Title Length") +
+  ggtitle("Movie title length over time ")
+```
+
+* Are movies getting longer ?
+```{r}
+movie_length_summary <- movies %>% 
+  group_by(year) %>% 
+  summarise(mean_length = mean(length), max_length = max(length))
+
+ggplot(movie_length_summary) + 
+  geom_smooth(aes(year, mean_length, color = "Mean length")) +
+  geom_smooth(aes(year, max_length, color = "Max length")) +
+  labs(x = "Year" , y = "Length") +
+  ggtitle("Movie length over time ")
+```
+
+
+### Are movies getting more expensive ?
+```{r}
+mean(movies$budget, na.rm = TRUE)
+
+
+movie_budget_summary <- movies %>% 
+  group_by(year) %>% 
+  summarise(mean_budget = mean(budget, na.rm = TRUE), 
+            max_budget = max(budget, na.rm = TRUE),
+            min_budget = min(budget, na.rm = TRUE),
+            n90th_percentile_budget = quantile(budget, 0.9, na.rm = TRUE)
+            ) %>% 
+  filter(!is.nan(mean_budget), mean_budget > 0)
+
+ggplot(movie_budget_summary) + 
+  geom_smooth(aes(year, min_budget, color = "Min")) +
+  geom_smooth(aes(year, mean_budget, color = "Mean")) +
+  geom_smooth(aes(year, n90th_percentile_budget, color = "90th Percentile")) +
+  geom_smooth(aes(year, max_budget, color = "Max")) +
+  labs(x = "Year" , y = "Budget") +
+  ggtitle("Movie budget over time ")
+```
+
+## What is the relationship between movie length and votes ?
+
+```{r}
+ggplot(movies, aes(length, votes)) + geom_point()
+```
+
+
+
+* How does MPAA influence votes ?
+
+```{r}
+movies_by_rating_and_votes <- movies %>%
+  filter(!is.null(mpaa), mpaa != '', votes > 0) %>%
+  group_by(mpaa, votes)  %>%
+  select(title, year, mpaa, votes)
+  
+
+ggplot(movies_by_rating_and_votes, aes(mpaa, votes)) + geom_boxplot()
+```
+
+
+

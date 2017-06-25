@@ -1,0 +1,130 @@
+---
+title: "3_7"
+author: "Wal McConnell"
+date: "24 June 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+```
+
+## 3.7 Maps
+
+* Vector Boundaries
+* Point Metadata
+* Area Metadata
+* Raster Images
+
+
+
+### Vector Boundaries
+
+#### Without coord_quickmap
+
+```{r}
+ggplot(map_data("county", "michigan"), aes(long, lat)) + geom_polygon(aes(group = group), fill = NA, colour = "grey50")
+```
+
+#### With coord_quickmap to ensure aspect ratio of the map is correctly set
+```{r}
+ggplot(map_data("county", "michigan"), aes(long, lat)) +
+  geom_polygon(aes(group = group), fill = NA, colour = "grey50") +
+  coord_quickmap()
+
+```
+
+```{r}
+mi_cities <- maps::us.cities %>%
+  tbl_df() %>%
+  filter(country.etc == "MI") %>%
+  select(-country.etc, lon = long) %>%
+  arrange(desc(pop))
+mi_cities
+
+ggplot(mi_cities, aes(lon, lat)) +
+  geom_point(aes(size = pop)) +
+  scale_size_area() + # Maps point size!
+  coord_quickmap()
+
+ggplot(mi_cities, aes(lon, lat)) +
+  geom_polygon(aes(group = group), mi_counties, fill = NA, colour = "grey50") +
+  geom_point(aes(size = pop), colour = "red") +
+  scale_size_area() +
+  coord_quickmap()
+
+```
+
+```{r}
+library(ggmap)
+
+if (file.exists("map.rds")) {
+  map <- readRDS("map.rds")
+} else {
+  map <- get_map(
+    location = c(mean(mi_cities$lon), mean(mi_cities$lat)),
+    source = "google", zoom = 8, maptype = "satellite"
+  )
+  saveRDS(map, "map.rds")
+}
+
+ggmap::ggmap(map) +
+  geom_point(aes(size = pop), mi_cities, colour = "red") +
+  scale_size_area()
+
+```
+
+
+
+
+``` {r}
+mi_census <- midwest %>%
+  tbl_df() %>%
+  filter(state == "MI") %>%
+  mutate(county = tolower(county)) %>%
+  select(county, area, poptotal, percwhite, percblack)
+
+census_counties <- left_join(mi_census, mi_counties, by = c("county" = "id"))
+
+
+ggplot(census_counties, aes(lon, lat, group = county)) +
+  geom_polygon(aes(fill = poptotal)) +
+  coord_quickmap()
+
+
+ggplot(census_counties, aes(lon, lat, group = county)) +
+  geom_polygon(aes(fill = percwhite)) +
+  coord_quickmap()
+
+```
+
+
+#### Using GGmap
+``` {r}
+mi_census <- midwest %>%
+  tbl_df() %>%
+  filter(state == "MI") %>%
+  mutate(county = tolower(county)) %>%
+  select(county, area, poptotal, percwhite, percblack)
+
+census_counties <- left_join(mi_census, mi_counties, by = c("county" = "id"))
+
+
+map <- get_map(
+    location = c(mean(census_counties$lon), mean(census_counties$lat)),
+    source = "google", zoom = 7, maptype = "satellite"
+  )
+
+
+ggmap::ggmap(map) +
+  geom_polygon(data = census_counties, aes(color = poptotal)) +
+  coord_quickmap()
+
+
+ggplot(census_counties, aes(lon, lat, group = county)) +
+  geom_polygon(aes(fill = percwhite)) +
+  coord_quickmap()
+
+```
