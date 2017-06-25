@@ -119,12 +119,12 @@ map <- get_map(
 
 
 ggmap::ggmap(map) +
-  geom_polygon(data = census_counties, aes(color = poptotal)) +
+  geom_polygon(data = census_counties, aes(fill = poptotal, group = county)) +
   coord_quickmap()
 
 
-ggplot(census_counties, aes(lon, lat, group = county)) +
-  geom_polygon(aes(fill = percwhite)) +
+ggmap::ggmap(map) +
+  geom_polygon(data = census_counties, aes(lon, lat, group = county, fill = percwhite)) +
   coord_quickmap()
 
 ```

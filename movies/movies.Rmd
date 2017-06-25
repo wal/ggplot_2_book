@@ -50,9 +50,20 @@ romance_movies <- movies %>% filter(Romance == 1)
 short_movies <- movies %>% filter(Short == 1)
 ```
 
+
+Can movies have more than one classification ?
+
+```{r}
+classification_totals <- movies %>% 
+  mutate(classification_total = (Action + Comedy + Drama + Documentary + Romance + Short)) %>%
+  select(classification_total)
+table(classification_totals)
+```
+
+
 ## Questions
 
-### What is the growth in the number of movies over time ?
+### How has the number of movies released each year changed over time ?
 
 ```{r}
 movie_count_by_year <- function(movie_data) {
@@ -68,7 +79,8 @@ movies_by_year <- movie_count_by_year(movies)
 ggplot(movies_by_year, aes(year, movies_count)) + 
   geom_point() + 
   geom_smooth(se = FALSE) +
-  labs(x = "Year", y = "Number of Movies")
+  labs(x = "Year", y = "Number of Movies") +
+  ggtitle("Movies per year")
 
 action_movies_by_year <- movie_count_by_year(action_movies)
 comedy_movies_by_year <- movie_count_by_year(comedy_movies)
@@ -87,13 +99,46 @@ ggplot() +
   geom_smooth(data = movies_by_year, se = FALSE, aes(x = year, y = movies_count, color = "Total")) + 
 
   labs(x = "Year", y = "Number of Movies") +
-  ggtitle("movies per year")
-
+  ggtitle("Movies per year by Type")
 
 ```
 
 
+## Movie Title Length
+
+
+### What is the distribution of movie title length
+
+```{r}
+library(stringr)
+ggplot(movies, aes("Title", str_length(title))) + geom_boxplot() + ggtitle("Movie Title Length (chars)")
+ggplot(movies, aes(str_length(title))) + 
+  geom_histogram(binwidth=2) + 
+  geom_freqpoly(binwidth=2, color = "blue") + 
+  labs(x = 'Characters', 'Count') +
+  ggtitle("Movie Title Length")
+ggplot(movies, aes(str_length(title))) + 
+  geom_density(color = 'hotpink') +
+  labs(x = 'Characters', 'Count') +
+  ggtitle("Movie Title Length Density")
+```
+
+### How does mpaa affect title length ?
+```{r}
+movies_with_mpaa <- movies %>% filter(!is.null(mpaa), mpaa != '')
+ggplot(movies_with_mpaa, aes(mpaa, str_length(title))) + 
+  geom_boxplot() + 
+  labs(x = "MPAA", y = "Movie Title Length") +
+  ggtitle("Movie Title Length v MPAA Rating")
+
+ggplot(movies_with_mpaa, aes(str_length(title), color = mpaa)) +
+  geom_density(binwidth = 2) +
+  labs(x = 'Movie Title Length', y = 'Movie Count')
+```
+
+
 ### Are movie titles getting longer ?
+
 
 ```{r}
 library(stringr)
@@ -145,15 +190,45 @@ ggplot(movie_budget_summary) +
   ggtitle("Movie budget over time ")
 ```
 
+
+### How has budget affected votes by decade 
+```{r}
+movies_with_budget <- movies %>% filter(budget > 0)
+movies_with_decade <- movies_with_budget %>% mutate(decade = signif(year,3))
+ggplot(movies_with_decade, aes(votes, (budget / 1000000))) + 
+  geom_point() + 
+  facet_wrap(~ decade) +
+  labs(x = "Votes", y = "Million /$") +
+  ggtitle("Votes v Budget")
+```
+
+
+
 ## What is the relationship between movie length and votes ?
 
+### Is it more expensive to make a longer movie ?
+
+```{r}
+less_than_five_hour_movies <- movies %>% filter(length < (5 * 60))
+ggplot(less_than_five_hour_movies, aes(length, budget)) + 
+  geom_point() +
+  geom_smooth() +
+  labs(x = "Minutes", y = "Budget") +
+  ggtitle("(Movies < 5Hrs) - Movie Length v Budget")
+
+```
+
+
+## Votes
+
+### Does Movie Length affect votes ?
 ```{r}
 ggplot(movies, aes(length, votes)) + geom_point()
 ```
 
 
 
-* How does MPAA influence votes ?
+### How does MPAA influence votes ?
 
 ```{r}
 movies_by_rating_and_votes <- movies %>%
@@ -164,6 +239,5 @@ movies_by_rating_and_votes <- movies %>%
 
 ggplot(movies_by_rating_and_votes, aes(mpaa, votes)) + geom_boxplot()
 ```
-
 
 
