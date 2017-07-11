@@ -39,7 +39,7 @@ precis(movies)
 head(movies)
 ```
 
-Prepare per type filtered data sets
+Prepare filtered data sets
 
 ```{r}
 action_movies <- movies %>% filter(Action == 1)
@@ -48,6 +48,11 @@ drama_movies <- movies %>% filter(Drama == 1)
 documentary_movies <- movies %>% filter(Documentary == 1)
 romance_movies <- movies %>% filter(Romance == 1)
 short_movies <- movies %>% filter(Short == 1)
+
+movies_with_budget <- movies %>% filter(budget > 0)
+less_than_five_hour_movies <- movies %>% filter(length < (5 * 60))
+movies_without_outliers <- movies %>% filter(budget < 500000000, length < (5 * 60))
+
 ```
 
 
@@ -59,6 +64,28 @@ classification_totals <- movies %>%
   select(classification_total)
 table(classification_totals)
 ```
+
+
+
+## Distributions
+
+### Movie Length
+```{r}
+ggplot(movies, aes(length)) + 
+  geom_histogram(binwidth = 5) + 
+  xlim(0,300) +
+  ggtitle("Movies < 5 hours")
+```
+
+### Movie Budget
+
+```{r}
+ggplot(movies_with_budget, aes(budget)) + 
+  geom_histogram(binwidth = 100000) +
+  xlim(0,100000000) +
+  ggtitle("Movies < 5 hours")
+```
+
 
 
 ## Questions
@@ -102,6 +129,9 @@ ggplot() +
   ggtitle("Movies per year by Type")
 
 ```
+
+
+
 
 
 ## Movie Title Length
@@ -171,7 +201,6 @@ ggplot(movie_length_summary) +
 ```{r}
 mean(movies$budget, na.rm = TRUE)
 
-
 movie_budget_summary <- movies %>% 
   group_by(year) %>% 
   summarise(mean_budget = mean(budget, na.rm = TRUE), 
@@ -193,7 +222,7 @@ ggplot(movie_budget_summary) +
 
 ### How has budget affected votes by decade 
 ```{r}
-movies_with_budget <- movies %>% filter(budget > 0)
+
 movies_with_decade <- movies_with_budget %>% mutate(decade = signif(year,3))
 ggplot(movies_with_decade, aes(votes, (budget / 1000000))) + 
   geom_point() + 
@@ -204,12 +233,9 @@ ggplot(movies_with_decade, aes(votes, (budget / 1000000))) +
 
 
 
-## What is the relationship between movie length and votes ?
-
 ### Is it more expensive to make a longer movie ?
 
 ```{r}
-less_than_five_hour_movies <- movies %>% filter(length < (5 * 60))
 ggplot(less_than_five_hour_movies, aes(length, budget)) + 
   geom_point() +
   geom_smooth() +
@@ -223,7 +249,10 @@ ggplot(less_than_five_hour_movies, aes(length, budget)) +
 
 ### Does Movie Length affect votes ?
 ```{r}
-ggplot(movies, aes(length, votes)) + geom_point()
+
+ggplot(less_than_five_hour_movies, aes(length, votes)) + 
+  geom_point() + 
+  geom_smooth()
 ```
 
 
@@ -240,4 +269,11 @@ movies_by_rating_and_votes <- movies %>%
 ggplot(movies_by_rating_and_votes, aes(mpaa, votes)) + geom_boxplot()
 ```
 
+### GGaly
+
+```{r}
+library(GGally)
+ggpairs(select(movies_without_outliers, budget, length, votes, rating, mpaa))
+ggpairs(select(movies_without_outliers, budget, length, votes, rating, mpaa), aes(colour = mpaa, alpha = 0.4))
+```
 

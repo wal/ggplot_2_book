@@ -1,0 +1,137 @@
+---
+title: "Chapter 5"
+author: "Wal McConnell"
+date: "11 July 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(tidyverse)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## 5.2 Building a Plot
+
+Building a plot manually using layer function
+
+```{r}
+p <- ggplot(mpg, aes(displ, hwy))
+p + layer(
+  mapping = NULL,
+  data = NULL,
+  geom = "point", 
+  stat = "identity", 
+  position = "identity"
+)
+```
+
+```{r}
+model <- loess(hwy ~ displ, data = mpg)
+grid <- data_frame(displ = seq(min(mpg$displ), max(mpg$displ), length = 50))
+grid$hwy <- predict(model, newdata = grid)
+std_resid <- resid(model) / model$s
+outlier <- filter(mpg, abs(std_resid) > 2)
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  geom_line(data = grid, colour = "blue", size = 1.5) +
+  geom_text(data = outlier, aes(label = model))
+```
+
+## Exercises 5.3.1
+
+### Question 2
+
+```{r}
+class <- mpg %>%
+     group_by(class) %>%
+     summarise(n = n(), hwy = mean(hwy))
+
+ggplot(class, aes(x = class, y = hwy)) +
+  geom_point(data = mpg, position = position_jitter(0.25)) +
+  geom_point(color = "red", size = 5) +
+  geom_text(aes(y = 10, label = paste("n = ",n)))
+  
+```
+
+
+## 5.4 Aesthetic mappings
+
+```{r}
+ggplot(mpg, aes(displ, hwy, colour = class)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme(legend.position = "none")
+
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = class)) +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme(legend.position = "none")
+```
+
+```{r}
+ggplot(mpg, aes(cty, hwy)) + geom_point(colour = "darkblue")
+
+ggplot(mpg, aes(cty, hwy)) + geom_point(aes(colour = "darkblue"))
+```
+
+### Exercise 5.4.3
+
+```{r}
+ggplot(mpg) + geom_point(aes(mpg$displ, mpg$hwy))
+ggplot(mpg, aes(displ, hwy)) + geom_point()
+```
+```{r}
+ggplot() +
+    geom_point(mapping = aes(y = hwy, x = cty), data = mpg) +
+    geom_smooth(data = mpg, mapping = aes(cty, hwy))
+
+ggplot(mpg, aes(cty, hwy)) + 
+         geom_point() +
+         geom_smooth()
+
+```
+
+```{r}
+ggplot(diamonds, aes(carat, price)) +
+     geom_point(aes(log(brainwt), log(bodywt)), data = msleep)
+
+ggplot(msleep) +
+     geom_point(aes(log(brainwt), log(bodywt)))
+
+```
+
+### Question 2
+
+```{r}
+ggplot(mpg) +
+     geom_point(aes(class, cty)) +
+     geom_boxplot(aes(trans, hwy))
+
+
+ggplot(mpg) +
+     geom_point(aes(class, cty))
+
+ggplot(mpg) +
+     geom_boxplot(aes(trans, hwy))
+
+```
+ ### Question 3
+ 
+ 
+ 
+```{r}
+library(precis)
+precis(diamonds)
+
+
+ggplot(diamonds, aes(y = color)) +
+  geom_point(aes(x = clarity), color = "red") +
+  geom_point(aes(x = carat), color = "blue")
+  
+
+
+
+```
