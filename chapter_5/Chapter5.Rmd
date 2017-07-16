@@ -135,3 +135,79 @@ ggplot(diamonds, aes(y = color)) +
 
 
 ```
+
+
+## Position Adjustment
+
+```{r}
+dplot <- ggplot(diamonds, aes(color, fill = cut)) +
+  xlab(NULL) + ylab(NULL) + theme(legend.position = "none")
+# position stack is the default for bars, so `geom_bar()`
+# is equivalent to `geom_bar(position = "stack")`.
+dplot + geom_bar()
+dplot + geom_bar(position = "fill")
+dplot + geom_bar(position = "dodge")
+# not useful for bars
+dplot + geom_bar(position = "identity", alpha = 1 / 2, colour = "grey50")
+```
+
+
+```{r}
+dplot + geom_bar(position = "identity", alpha = 1 / 2, colour = "grey50")
+
+ggplot(diamonds, aes(color, colour = cut)) + 
+  geom_line(aes(group = cut), stat = "count") + 
+  xlab(NULL) + ylab(NULL) + 
+  theme(legend.position = "none")
+```
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) + geom_point(position = "jitter")
+ggplot(mpg, aes(displ, hwy)) + geom_point(position = position_jitter(width = 0.05, height = 0.5))
+ggplot(mpg, aes(displ, hwy)) + geom_jitter(width = 0.05, height = 0.5)
+```
+
+## position_nudge
+position_nudge is generally useful for adjusting the position of items on discrete scales by a small amount. Nudging is built in to geom_text because it's so useful for moving labels a small distance from what they're labelling.
+
+
+## geom_jitter v geom_count
+
+If overplotting is an issue ?
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) + geom_jitter()
+ggplot(mpg, aes(displ, hwy)) + geom_count()
+```
+
+# R - Stacked Area plot
+
+#http://www.r-graph-gallery.com/portfolio/stacked-area-graph/
+
+```{r}
+set.seed(345)
+Sector <- rep(c("S01","S02","S03","S04","S05","S06","S07"),times=7)
+Year <- as.numeric(rep(c("1950","1960","1970","1980","1990","2000","2010"),each=7))
+Value <- runif(49, 10, 100)
+data <- data.frame(Sector,Year,Value)
+
+
+ggplot(data, aes(x=Year, y=Value, fill=Sector)) + geom_area()
+ggplot(data, aes(x=Year, y=Value, fill=Sector)) +
+    geom_area(colour="black", size=.2, alpha=.4) +
+    scale_fill_brewer(palette="Greens", breaks=rev(levels(data$Sector)))
+data=data[order(data$Sector, decreasing=T) , ]
+ggplot(data, aes(x=Year, y=Value, fill=Sector)) +
+    geom_area(colour="black", size=.2, alpha=.4) +
+    scale_fill_brewer(palette="Greens", breaks=rev(levels(data$Sector)))
+data$Sector=factor(data$Sector , levels=levels(data$Sector)[c(1,4,3,2,7,6,5)])
+ggplot(data, aes(x=Year, y=Value, fill=Sector)) + 
+    geom_area()
+my_fun=function(vec){ as.numeric(vec[3]) / sum(data$Value[data$Year==vec[2]]) *100 }
+data$prop=apply(data , 1 , my_fun)
+ 
+ggplot(data, aes(x=Year, y=prop, fill=Sector)) + 
+    geom_area(alpha=0.6 , size=1, colour="black")
+
+```
+
