@@ -126,12 +126,117 @@ ggplot(mpg) +
 library(precis)
 precis(diamonds)
 
-
 ggplot(diamonds, aes(y = color)) +
   geom_point(aes(x = clarity), color = "red") +
   geom_point(aes(x = carat), color = "blue")
   
+```
 
+### Exercises 5.5.1
+
+| geom          | Aesthetics           
+| ------------- |:-------------:
+|geom_blank     | none
+|geom_point     | x, y, alpha, colour, fill, group, shape, size, stroke
+|geom_path      | x, y, alpha, colour, group, linetype, size
+|geom_ribbon    | x, ymin, ymax, alpha, colour, fill, linetype, size
+|geom_segment   | x, y, xend, yend, alpha, colour, group, linetype, size
+|geom_rect      | x, y, alpha, colour, fill, linetype, size
+|geom_polygon   | x, y, alpha, colour, fill, linetype, size
+|geom_text      | x, y, label, alpha, angle, colour, family, fontface, group, hjust, lineheight, size, vjust
+
+### Question 4
+
+```{r}
+ggplot(mpg, aes(drv, displ)) + 
+  geom_violin()
+```
+
+```{r}
+ggplot(mpg, aes(hwy, cty)) + 
+  geom_count(alpha = 1/3) + 
+  theme(legend.position = "none")
+
+# This is a variant geom_point that counts the number of observations at each location, then maps the count to point area. It useful when you have discrete data and overplotting.
+
+ggplot(mpg, aes(hwy, cty)) + 
+  geom_point(alpha = 1/3) + 
+  theme(legend.position = "none")
+```
+
+
+
+```{r}
+ggplot(mpg, aes(hwy, cty)) + 
+  geom_hex(bins = 10) + 
+  theme(legend.position = "none")
+```
+
+```{r}
+
+# The jitter geom is a convenient shortcut for geom_point(position = "jitter"). It adds a small amount of random variation to the location of each point, and is a useful way of handling overplotting caused by discreteness in smaller datasets.
+
+ggplot(mpg, aes(cyl, drv)) + 
+  geom_jitter(width = 0.2, height = 0.2)
+```
+
+```{r}
+ggplot(economics, aes(date, psavert)) + geom_area()
+```
+
+```{r}
+ggplot(economics, aes(uempmed, psavert)) + geom_path()
+```
+
+
+| Problem     | geom
+| ------------- |:-------------:
+| Display how a variable has changed over time. | geom_line
+| Show the detailed distribution of a single variable. | geom_boxplot
+| Focus attention on the overall trend in a large dataset. | geom_histogram
+| Draw a map. | geom_map
+| Label outlying points. | geom_text
+
+
+### Exercises 5.6.2
+
+```{r}
+
+ggplot(mpg, aes(hwy, displ)) + geom_smooth()
+
+mod <- loess(hwy ~ displ, data = mpg)
+smoothed <- data.frame(displ = seq(1.6, 7, length = 50))
+pred <- predict(mod, newdata = smoothed, se = TRUE)
+smoothed$hwy <- pred$fit
+smoothed$hwy_lwr <- pred$fit - 1.96 * pred$se.fit
+smoothed$hwy_upr <- pred$fit + 1.96 * pred$se.fit
+
+ggplot(smoothed, aes(y = displ, x = hwy)) +
+  geom_ribbon(aes(ymin = min(displ), ymax = max(displ)), fill = "grey70")
+  
+```
+
+
+```{r}
+ggplot(mpg, aes(displ)) + stat_ecdf()
+ggplot(mpg, aes(sample = displ)) + stat_qq()
+
+
+ggplot(mpg, aes(displ)) + 
+  geom_density(color = "pink") +
+  stat_function(fun = "dnorm", args = list(mean = mean(mpg$displ), sd = sd(mpg$displ)))
+  #stat_function(fun = "dnorm")
+
+
+ggplot(mpg, aes(displ)) + 
+  geom_density(color = "pink") +
+  #stat_function(fun = "dnorm", args = list(mean = mean(mpg$displ), sd = sd(mpg$displ)))
+  stat_function(fun = "dnorm")
 
 
 ```
+```{r}
+ggplot(mpg, aes(drv, trans)) + geom_count(aes(size = ..prop.., group = 1))
+ggplot(mpg, aes(drv, trans)) + geom_count(aes(size = ..prop..))
+```
+
