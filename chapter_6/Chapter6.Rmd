@@ -1,0 +1,649 @@
+---
+title: "Chapter 6 - Scales, Axes and Legends"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(precis)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+
+Scales control the mapping from data to aesthetics.
+
+Formally, each scale is a function from a region in data space (the domain of the scale) to a region in aesthetic space (the range of the scale). 
+
+
+#### Scale Types
+continuous position scales
+colour scales
+manual scales
+identity scales.
+
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) + geom_point(aes(colour = class))
+
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(colour = class)) +
+  scale_x_continuous() + 
+  scale_y_continuous() + 
+  scale_colour_discrete()
+
+```
+
+
+
+```{r}
+precis(mpg)
+```
+
+
+The use of + to "add" scales to a plot is a little misleading. When you + a scale, you're not actually adding it to the plot, but overriding the existing scale
+
+```{r}
+df <- data.frame(x = 1:2, y = 1, z = "a")
+p <- ggplot(df, aes(x, y)) + geom_point()
+p + scale_x_continuous("X axis")
+p + scale_x_continuous(quote(a + mathematical ^ expression))
+```
+
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(colour = class)) + 
+  scale_x_continuous("A really awesome x axis label") +
+  scale_y_continuous("An amazingly great y axis label")
+```
+
+ Using different scale
+ 
+```{r}
+base_plot <- ggplot(mpg, aes(displ, hwy)) + geom_point(aes(colour = class))
+base_plot + scale_x_sqrt()
+base_plot + scale_x_continuous() 
+base_plot + scale_x_discrete() # Why do the axis labels disappear if plotting a discrete variable onto a continuous scale ?
+base_plot + scale_x_log10() # Why axis labels disappear ?
+base_plot + scale_x_reverse()
+base_plot + scale_x_time()
+```
+
+## Exercises 6.2.1
+
+What happens if you pair a discrete variable to a continuous scale? What happens if you pair a continuous variable to a discrete scale?
+
+```{r}
+ precis(mpg)
+
+mpg$year <- as.factor(mpg$year)
+
+ggplot(mpg, aes(year, displ)) + 
+  geom_point()
+
+ggplot(mpg, aes(year, displ)) + 
+  geom_point() +
+  scale_y_discrete()
+  
+ggplot(mpg, aes(year, displ)) + 
+  geom_point() +
+  scale_x_continuous()
+
+```
+
+Simplify graph definitions 
+
+```{r}
+
+ggplot(mpg, aes(displ)) + 
+  scale_y_continuous("Highway mpg") + 
+  scale_x_continuous() +
+  geom_point(aes(y = hwy))
+
+is.factor(mpg$displ)
+is.factor(mpg$hwy)
+
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() +
+  labs(y ="Highway mpg")
+
+```
+
+```{r}
+
+is.factor(mpg$displ)
+is.factor(mpg$class)
+
+ggplot(mpg, aes(y = displ, x = class)) + 
+  scale_y_continuous("Displacement (l)") + 
+  scale_x_discrete("Car type") +
+  scale_x_discrete("Type of car") + 
+  scale_colour_discrete() + 
+  geom_point(aes(colour = drv)) + 
+  scale_colour_discrete("Drive\ntrain")
+
+ggplot(mpg, aes(as.factor(class), displ, color = drv)) + 
+  geom_point() + 
+  labs(x = "Type of car", y = "Displacement (l)", color = "Drive\ntrain")
+  
+```
+
+## Guides
+
+If you're struggling to get the legend you want, it's likely that your data is in the wrong form
+
+### Scale Title
+
+```{r}
+df <- data.frame(x = 1:2, y = 1, z = "a")
+
+p <- ggplot(df, aes(x, y)) + geom_point()
+p + scale_x_continuous("X axis")
+p + scale_x_continuous(quote(a + mathematical ^ expression))
+
+```
+
+### Axis labels
+
+```{r}
+p <- ggplot(df, aes(x, y)) + geom_point(aes(colour = z))
+
+p + xlab("X axis") + ylab("Y axis")
+
+p + labs(x = "X axis", y = "Y axis", colour = "Colour\nlegend")
+```
+
+```{r}
+p <- ggplot(df, aes(x, y)) + 
+  geom_point() + 
+  theme(plot.background = element_rect(colour = "grey50"))
+
+p + labs(x = "x",  y = "y")
+p + labs(x = NULL, y = NULL)
+```
+
+
+### Breaks and Legends
+
+The breaks argument controls which values appear as tick marks on axes and keys on legends
+
+```{r}
+df <- data.frame(x = c(1, 3, 5) * 1000, y = 1)
+
+axs <- ggplot(df, aes(x, y)) + 
+  geom_point() + 
+  labs(x = NULL, y = NULL)
+axs
+axs + scale_x_continuous(breaks = c(2000, 4000))
+axs + scale_x_continuous(breaks = c(2000, 4000), labels = c("2k", "4k"))
+
+# Show no breaks or scales
+axs + scale_x_continuous(breaks = NULL) 
+axs + scale_x_continuous(labels = NULL)
+
+leg <- ggplot(df, aes(y, x, fill = x)) + 
+  geom_tile() + 
+  labs(x = NULL, y = NULL)
+leg
+leg + scale_fill_continuous(breaks = c(2000, 4000))
+leg + scale_fill_continuous(breaks = c(2000, 4000), labels = c("2k", "4k"))
+```
+
+If you set labels, you must also set breaks
+
+Rename breaks in categorical scale using labels
+
+```{r}
+df2 <- data.frame(x = 1:3, y = c("a", "b", "c"))
+
+ggplot(df2, aes(x, y)) + 
+  geom_point()
+
+ggplot(df2, aes(x, y)) + 
+  geom_point() + 
+  scale_y_discrete(labels = c(a = "apple", b = "banana", c = "carrot"))
+```
+
+### Supply a function to breaks or labels
+
+```{r}
+df <- data.frame(x = c(1, 3, 5) * 1000, y = 1)
+
+axs <- ggplot(df, aes(x, y)) + 
+  geom_point() + 
+  labs(x = NULL, y = NULL)
+
+leg <- ggplot(df, aes(y, x, fill = x)) + 
+  geom_tile() + 
+  labs(x = NULL, y = NULL)
+
+axs + scale_y_continuous(labels = scales::percent_format())
+axs + scale_y_continuous(labels = scales::dollar_format("$"))
+leg + scale_fill_continuous(labels = scales::unit_format("k", 1e-3)) # legend
+leg + scale_y_continuous(labels = scales::unit_format("k", 1e-3)) # y axis
+
+```
+
+### Minor breaks
+
+```{r}
+df <- data.frame(x = c(2, 3, 5, 10, 200, 3000), y = 1)
+ggplot(df, aes(x, y)) + 
+  geom_point() + 
+  scale_x_log10()
+
+mb <- as.numeric(1:10 %o% 10 ^ (0:4))
+
+ggplot(df, aes(x, y)) + 
+  geom_point() + 
+  scale_x_log10(minor_breaks = log10(mb)) # Shows more at lower end
+```
+
+## Exercises 6.3.3
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() +
+  labs(x = "Displacement", y = quote(paste("Highway ", (frac("miles", "gallon"))))) +
+  scale_x_continuous(labels = scales::unit_format("L"))
+  
+```
+
+### Breaks v Labels
+
+#### Breaks
+* NULL for no breaks
+* waiver() for the default breaks computed by the transformation object
+* A numeric vector of positions
+* A function that takes the limits as input and returns breaks as output
+
+#### Labels
+
+* NULL for no labels
+* waiver() for the default labels computed by the transformation object
+* A character vector giving labels (must be same length as breaks)
+* A function that takes the breaks as input and returns labels as output
+
+```{r}
+data(mpg)
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(color = drv)) +
+  scale_color_discrete(labels = c("4" = "4wd", "f" = "fwd", "r" = "rwd"))
+```
+
+### Question 4
+What label function allows you to create mathematical expressions? What label function converts 1 to 1st, 2 to 2nd, and so on?
+
+```{r}
+library(scales)
+ordinal(c(1,2,3,4,5,6))
+```
+
+### Question 5
+
+What are the three most important arguments that apply to both axes and legends? What do they do? Compare and contrast their operation for axes vs. legends.
+
+
+* breaks
+* labels
+* limits
+
+```{r}
+
+```
+
+
+
+## Legends
+
+
+A legend may need to draw symbols from multiple layers
+
+```{r}
+df <- data.frame(x = 1, y = 1:3, z = letters[1:3])
+p <- ggplot(df, aes(x, y, colour = z))
+p + geom_point()
+p + geom_point() + geom_path(aes(group = 1))
+p + geom_raster(aes(fill = z))
+```
+
+
+```{r}
+ggplot(df, aes(y, y)) + 
+  geom_point(size = 4, colour = "grey20") +
+  geom_point(aes(colour = z), size = 2) 
+
+ggplot(df, aes(y, y)) + 
+  geom_point(size = 4, colour = "grey20", show.legend = TRUE) +
+  geom_point(aes(colour = z), size = 2) 
+```
+
+```{r}
+norm <- data.frame(x = rnorm(1000), y = rnorm(1000))
+norm$z <- cut(norm$x, 3, labels = c("a", "b", "c"))
+ggplot(norm, aes(x, y)) + geom_point(aes(colour = z), alpha = 0.1)
+
+ggplot(norm, aes(x, y)) + 
+  geom_point(aes(colour = z), alpha = 0.1) + 
+  guides(colour = guide_legend(override.aes = list(alpha = 1)))
+```
+
+```{r}
+ggplot(df, aes(x, y)) + geom_point(aes(colour = z))
+ggplot(df, aes(x, y)) + geom_point(aes(shape = z))
+ggplot(df, aes(x, y)) + geom_point(aes(shape = z, colour = z))
+
+```
+
+A number of settings that affect the overall display of the legends are controlled through the theme system
+
+```{r}
+df <- data.frame(x = 1:3, y = 1:3, z = c("a", "b", "c"))
+base <- ggplot(df, aes(x, y)) + 
+  geom_point(aes(colour = z), size = 3) + 
+  xlab(NULL) + 
+  ylab(NULL)
+
+base + theme(legend.position = "right") # the default 
+base + theme(legend.position = "bottom")
+base + theme(legend.position = "none")
+```
+
+```{r}
+base <- ggplot(df, aes(x, y)) + 
+  geom_point(aes(colour = z), size = 3)
+
+base + theme(legend.position = c(0, 1), legend.justification = c(0, 1))
+base + theme(legend.position = c(0.5, 0.5), legend.justification = c(0.5, 0.5))
+base + theme(legend.position = c(1, 0), legend.justification = c(1, 0))
+```
+
+## Guide functions
+
+```{r}
+df <- data.frame(x = 1, y = 1:3, z = 1:3)
+base <- ggplot(df, aes(x, y)) + geom_raster(aes(fill = z))
+base 
+base + scale_fill_continuous(guide = guide_legend())
+base + guides(fill = guide_legend())
+```
+
+### Guide Legend
+
+```{r}
+df <- data.frame(x = 1, y = 1:4, z = letters[1:4])
+# Base plot
+p <- ggplot(df, aes(x, y)) + geom_raster(aes(fill = z))
+p
+p + guides(fill = guide_legend(ncol = 2))
+p + guides(fill = guide_legend(ncol = 2, byrow = TRUE))
+```
+
+```{r}
+p <- ggplot(df, aes(1, y)) + geom_bar(stat = "identity", aes(fill = z))
+p
+p + guides(fill = guide_legend(reverse = TRUE))
+```
+
+```{r}
+df <- data.frame(x = 1, y = 1:4, z = 4:1)
+p <- ggplot(df, aes(x, y)) + geom_tile(aes(fill = z))
+
+p
+p + guides(fill = guide_colorbar(reverse = TRUE))
+p + guides(fill = guide_colorbar(barheight = unit(4, "cm")))
+```
+
+
+## Exercises 6.4.4
+
+#### Q1 How do you make legends appear to the left of the plot?
+
+
+```{r}
+df <- data.frame(x = 1:3, y = 1:3, z = c("a", "b", "c"))
+base <- ggplot(df, aes(x, y)) + 
+  geom_point(aes(colour = z), size = 3) + 
+  xlab(NULL) + 
+  ylab(NULL)
+
+base + theme(legend.position = "left") 
+```
+
+### Q2 
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point(aes(colour = drv, shape = drv))
+```
+
+### Q3 ???
+
+```{r}
+ggplot(mpg, aes(displ, hwy, colour = class)) + 
+  geom_point(show.legend = FALSE) + 
+  geom_smooth(method = "lm", se = FALSE) + 
+  theme(legend.position = "bottom") + 
+  guides(colour = guide_legend(nrow = 1))
+```
+
+## Limits
+
+The limits, or domain, of a scale are usually derived from the range of the data
+
+
+```{r}
+df <- data.frame(x = 1:3, y = 1:3)
+base <- ggplot(df, aes(x, y)) + geom_point() 
+
+base
+base + scale_x_continuous(limits = c(1.5, 2.5))
+base + scale_x_continuous(limits = c(0, 4))
+
+base + xlim(0, 4)
+base + xlim(4, 0) # reversed
+base + lims(x = c(0, 4))
+```
+
+The axes actually extends a little bit past the limits that you've specified. This ensures that the data does not overlap the axes
+
+```{r}
+ggplot(faithfuld, aes(waiting, eruptions)) + 
+  geom_raster(aes(fill = density)) + 
+  theme(legend.position = "none") 
+
+ggplot(faithfuld, aes(waiting, eruptions)) + 
+  geom_raster(aes(fill = density)) + 
+  scale_x_continuous(expand = c(0,0)) + 
+  scale_y_continuous(expand = c(0,0)) +
+  theme(legend.position = "none")
+```
+
+
+By default, any data outside the limits is converted to NA. his means that setting the limits is not the same as visually zooming in to a region of the plot.
+
+```{r}
+df <- data.frame(x = 1:5)
+p <- ggplot(df, aes(x, 1)) + geom_tile(aes(fill = x), colour = "white")
+p
+p + scale_fill_gradient(limits = c(2, 4))
+p + scale_fill_gradient(limits = c(2, 4), oob = scales::squish)
+```
+
+
+
+# Exercises 6.5.1
+
+```{r}
+
+mpg$class <-  as.factor(mpg$class)
+levels(mpg$class)
+
+fwd <- subset(mpg, drv == "f")
+rwd <- subset(mpg, drv == "r")
+
+x_limits <- c(min(mpg$displ), max(mpg$displ))
+y_limits <- c(min(mpg$hwy), max(mpg$hwy))
+
+dosomething <-  function(data_set) {
+   return(ggplot(data_set, aes(displ, hwy, colour = class)) + 
+    geom_point() +
+    scale_x_continuous(limits = x_limits) +
+    scale_y_continuous(limits = y_limits) +
+    lims(color = levels(mpg$class)))
+}
+
+dosomething(fwd)
+dosomething(rwd)
+
+```
+
+### Question 2 - What does expand_limits() do and how does it work? 
+
+Sometimes you may want to ensure limits include a single value, for all panels or all plots. This function is a thin wrapper around geom_blank that makes it easy to add such values.
+
+
+Works by adding a blank geom with new data scales
+
+```{r}
+expand_limits <- function(...) {
+  data <- data.frame(..., stringsAsFactors = FALSE)
+
+  geom_blank(aes_all(names(data)), data, inherit.aes = FALSE)
+}
+```
+
+
+
+```{r}
+p <- ggplot(mtcars, aes(mpg, wt)) + geom_point()
+p + expand_limits(x = 0)
+p + expand_limits(y = c(1, 9))
+p + expand_limits(x = 0, y = 0)
+
+ggplot(mtcars, aes(mpg, wt)) +
+  geom_point(aes(colour = cyl)) +
+  expand_limits(colour = seq(2, 10, by = 2))
+
+ggplot(mtcars, aes(mpg, wt)) +
+  geom_point(aes(colour = factor(cyl))) +
+  expand_limits(colour = factor(seq(2, 10, by = 2)))
+```
+
+### Question 3 - What happens if you add two xlim() calls to the same plot? Why?
+
+it replaces it
+
+```{r}
+df <- data.frame(x = 1:3, y = 1:3)
+base <- ggplot(df, aes(x, y)) + geom_point() 
+
+base + xlim(1, 10) 
+base + xlim(2, 3) + xlim(2,9)
+```
+
+### Question 4 - What does scale_x_continuous(limits = c(NA, NA)) do?
+
+uses min and max ? 
+
+```{r}
+ggplot(mpg, aes(displ, hwy, colour = class)) + 
+  geom_point()
+
+ggplot(mpg, aes(displ, hwy, colour = class)) + 
+  geom_point() +
+  scale_x_continuous(limits = c(NA, NA))
+
+summary(mpg$displ)
+```
+
+## Continuous position scales
+
+
+apply transformations
+
+
+if you transform the data, the axes will be labelled in the transformed space. The transformation occurs before any statistical summaries
+
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  scale_y_continuous(trans = "reciprocal")
+
+
+ggplot(mpg, aes(displ, hwy)) + 
+  geom_point() + 
+  scale_y_continuous(trans = "sqrt")
+
+# Log transform x and y axes
+ggplot(diamonds, aes(price, carat)) + 
+  geom_bin2d() + 
+  scale_x_continuous(trans = "log10") +
+  scale_y_continuous(trans = "log10")
+```
+
+
+```{r}
+base <- ggplot(economics, aes(date, psavert)) + 
+  geom_line(na.rm = TRUE) +
+  labs(x = NULL, y = NULL)
+
+base # Default breaks and labels
+base + scale_x_date(date_labels = "%y", date_breaks = "5 years")
+base + scale_x_date(date_labels = "%Y", date_breaks = "20 years")
+
+base + scale_x_date(
+  limits = as.Date(c("2004-01-01", "2005-01-01")),
+  date_labels = "%b %y",
+  date_minor_breaks = "1 month"
+)
+base + scale_x_date(
+  limits = as.Date(c("2004-01-01", "2004-06-01")),
+  date_labels = "%m/%d",
+  date_minor_breaks = "2 weeks"
+)
+```
+
+
+## Color
+
+There are quite a few different ways of mapping values to colours in ggplot2: four different gradient-based methods for continuous values, and two methods for mapping discrete values.
+
+
+### Colour theory 
+
+At the physical level, colour is produced by a mixture of wavelengths of light.
+
+To characterise a colour completely, we need to know the complete mixture of wavelengths.
+
+```{r}
+erupt <- ggplot(faithfuld, aes(waiting, eruptions, fill = density)) +
+  geom_raster() +
+  scale_x_continuous(NULL, expand = c(0, 0)) + 
+  scale_y_continuous(NULL, expand = c(0, 0)) + 
+  theme(legend.position = "none")
+
+erupt
+
+erupt + scale_fill_gradient(low = "white", high = "black")
+
+erupt + scale_fill_gradient(
+  low = munsell::mnsl("5G 9/2"), 
+  high = munsell::mnsl("5G 6/8")
+)
+
+mid <- median(faithfuld$density)
+erupt + scale_fill_gradient2(midpoint = mid) 
+```
+```{r}
+summary(luv_colours)
+head(luv_colours)
+
+ggplot(luv_colours, aes(u, v, color = col)) +
+  geom_point(data = colors())
+
+```
+

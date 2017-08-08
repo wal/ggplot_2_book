@@ -1,0 +1,85 @@
+---
+title: "group_astethic"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(precis)
+temp_data = read.csv("averageTemperatureByMonth.csv")
+```
+
+Dataset 
+
+```{r}
+precis(temp_data)
+temp_data
+```
+
+
+## Plot graph of temperature over year
+
+```{r}
+ggplot(temp_data, aes(x = month, y = aveTemperature)) + 
+  geom_line( ) + ggtitle("Temp by month")
+
+```
+
+
+```{r}
+ggplot(temp_data, aes(x = month, y = aveTemperature, group=1)) + 
+  geom_line() + 
+  ggtitle("Temperature by month")
+
+```
+
+
+```{r}
+ggplot(temp_data, aes(x = as.numeric(month), y = aveTemperature)) + 
+  geom_line( ) + ggtitle("Temp by month")
+```
+
+With month names
+
+```{r}
+ggplot(temp_data, aes(x = month, 
+                      y = aveTemperature, 
+                      group = 1)) + 
+  geom_line( ) + 
+  ggtitle("Temperature by month")
+```
+
+# With year data
+
+
+```{r}
+temp_data_with_year = read.csv("averageTemperatureByMonth_and_year.csv")
+precis(temp_data_with_year)
+temp_data_with_year
+```
+
+```{r}
+ggplot(temp_data_with_year, aes(x = month, y = aveTemperature)) + 
+  geom_line( ) + ggtitle("Temp by month")
+```
+
+
+```{r}
+ggplot(temp_data_with_year, aes(x = month, 
+                                y = aveTemperature, 
+                                group = year, 
+                                color = year)) + 
+  geom_line() + 
+  ggtitle("Temperature by month")
+```
+
+```{r}
+temp_data_with_year$year_as_factor <- as.factor(temp_data_with_year$year)
+ggplot(temp_data_with_year, aes(x = month, 
+                                y = aveTemperature, 
+                                group = year_as_factor,
+                                color = year_as_factor)) + 
+  geom_line() + 
+  ggtitle("Temperature by month")
+```
+

@@ -202,7 +202,7 @@ ggplot(economics, aes(uempmed, psavert)) + geom_path()
 
 ```{r}
 
-ggplot(mpg, aes(hwy, displ)) + geom_smooth()
+ggplot(mpg, aes(displ, hwy)) + geom_smooth()
 
 mod <- loess(hwy ~ displ, data = mpg)
 smoothed <- data.frame(displ = seq(1.6, 7, length = 50))
@@ -211,8 +211,9 @@ smoothed$hwy <- pred$fit
 smoothed$hwy_lwr <- pred$fit - 1.96 * pred$se.fit
 smoothed$hwy_upr <- pred$fit + 1.96 * pred$se.fit
 
-ggplot(smoothed, aes(y = displ, x = hwy)) +
-  geom_ribbon(aes(ymin = min(displ), ymax = max(displ)), fill = "grey70")
+ggplot(smoothed, aes(x = displ, y = hwy)) +
+  geom_ribbon(aes(ymin = hwy_lwr, ymax = hwy_upr), fill = "grey70") + 
+  geom_lin
   
 ```
 
