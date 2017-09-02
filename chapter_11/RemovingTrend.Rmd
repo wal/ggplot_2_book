@@ -1,0 +1,294 @@
+---
+title: "Chapter 11"
+output:
+  html_document: default
+  html_notebook: default
+---
+```{r echo=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+
+# Modeling
+
+* Using models as a tool to remove obvious patterns in your plots
+* Models can be a powerful tool for summarising data so that you get a higher level view.
+
+
+
+
+# Linear Models
+
+
+Linear models are a basic, but powerful, tool of statistics, and I recommend that everyone serious about visualisation learns at least the basics of how to use them
+
+
+##  Diamonds
+
+So far our analysis of the diamonds data has been plagued by the powerful relationship between size and price
+
+It makes it very difficult to see the impact of cut, colour and clarity because higher quality diamonds tend to be smaller, and hence cheaper
+
+
+```{r echo=FALSE}
+summary(diamonds)
+ggplot(diamonds, aes(carat, price)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE, size = 2, colour = "yellow")
+
+
+ggplot(diamonds, aes(carat, price, color = cut)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE, size = 2)
+
+
+ggplot(diamonds, aes(carat, price, color = clarity)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE, size = 2)
+
+
+ggplot(diamonds, aes(carat, price, color = color)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE, size = 2)
+```
+
+
+```{r}
+ggplot(diamonds %>% filter(carat <= 2), aes(carat, price)) + 
+  geom_bin2d() + 
+  geom_smooth(method = "lm", se = FALSE, size = 2, colour = "yellow")
+```
+
+```{r}
+model <- lm(price ~ carat, data = diamonds)
+summary(model)
+coef(summary(model))
+head(diamonds$price)
+head(resid(mod))
+summary(resid(mod))
+ggplot(diamonds %>% mutate(rel_price = resid(mod)), aes(carat, rel_price)) + geom_point()
+ggplot(diamonds %>% mutate(rel_price = resid(mod)), aes(carat, rel_price)) + geom_bin2d()
+```
+
+
+
+We can use a linear model to remove the effect of size on price. Instead of looking at the raw price, we can look at the relative price: how valuable is this diamond relative to the average diamond of the same size.
+
+
+```{r echo=FALSE}
+diamonds2 <- diamonds %>% 
+  filter(carat <= 2) %>%
+  mutate(
+    lcarat = log2(carat),
+    lprice = log2(price)
+  )
+diamonds2
+
+ggplot(diamonds2, aes(lcarat, lprice)) + 
+  geom_bin2d() + 
+  geom_smooth(method = "lm", se = FALSE, size = 2, colour = "yellow")
+```
+
+
+
+
+```{r echo=FALSE}
+mod <- lm(lprice ~ lcarat, data = diamonds2)
+summary(mod)
+coef(summary(mod))
+```
+
+### Residuals
+
+residuals are the vertical distance between each point and the line of best fit.
+
+
+A relative price of zero means that the diamond was at the average price; positive means that it’s means that it’s more expensive than expected (based on its size), and negative means that it’s cheaper than expected.
+
+
+```{r}
+diamonds2 <- diamonds2 %>% mutate(rel_price = resid(mod))
+ggplot(diamonds2, aes(carat, rel_price)) + 
+  geom_bin2d()
+```
+```{r}
+xgrid <- seq(-2, 1, by = 1/3)
+data.frame(logx = xgrid, x = round(2 ^ xgrid, 2))
+```
+
+```{r}
+color_cut <- diamonds2 %>% 
+  group_by(color, cut) %>%
+  summarise(
+    price = mean(price), 
+    rel_price = mean(rel_price)
+  )
+color_cut
+```
+
+```{r}
+ggplot(color_cut, aes(color, price)) + 
+  geom_line(aes(group = cut), colour = "grey80") +
+  geom_point(aes(colour = cut))
+```
+
+
+```{r}
+ggplot(color_cut, aes(color, rel_price)) + 
+  geom_line(aes(group = cut), colour = "grey80") +
+  geom_point(aes(colour = cut))
+```
+
+
+
+## Exercises
+
+What happens if you repeat the above analysis with all diamonds? (Not just all diamonds with two or fewer carats). What does the strange ge- ometry of log(carat) vs relative price represent? What does the diagonal line without any points represent?
+
+
+```{r}
+ggplot(diamonds, aes(carat, price)) + 
+  geom_bin2d() + 
+  geom_smooth(method = "lm", se = FALSE, size = 2, color = "Yellow")
+
+ldiamonds <- diamonds %>% mutate(lcarat = log(carat), lprice = log(price))
+
+ggplot(ldiamonds, aes(lcarat, lprice)) + 
+  geom_bin2d() + 
+  geom_smooth(method = "lm", se = FALSE, size = 2, color = "Yellow")
+
+model <- lm(lprice ~ lcarat, data = ldiamonds)
+coef(summary(model))
+
+ldiamonds <- ldiamonds %>% mutate(rel_price = resid(model))
+ggplot(ldiamonds, aes(lcarat, rel_price)) + geom_bin2d()
+
+by_carat <- ldiamonds %>% group_by(lcarat, cut, color, clarity) %>%
+  summarise(price = mean(price),
+            rel_price = mean(rel_price))
+```
+
+## What does the strange ge- ometry of log(carat) vs relative price represent?
+
+Larger diamonds tend to be cheaper than average because they are typically lower quality
+
+
+```{r}
+by_carat <- ldiamonds %>% group_by(lcarat, cut, color, clarity) %>%
+  summarise(price = mean(price),
+            rel_price = mean(rel_price))
+
+ggplot(by_carat, aes(lcarat, rel_price, color = cut)) + 
+  geom_point()
+
+ggplot(by_carat, aes(lcarat, rel_price, color = color)) + 
+  geom_point()
+
+ggplot(by_carat, aes(lcarat, rel_price, color = clarity)) + 
+  geom_point()
+```
+
+```{r}
+by_carat <- ldiamonds %>% group_by(lcarat) %>%
+  summarise(price = mean(price),
+            rel_price = mean(rel_price))
+
+ggplot(by_carat, aes(lcarat, rel_price)) + geom_point()
+
+
+by_carat_cut <- ldiamonds %>% group_by(lcarat, cut) %>%
+  summarise(price = mean(price),
+            rel_price = mean(rel_price))
+
+ggplot(by_carat_cut, aes(lcarat, rel_price)) + geom_point() + geom_smooth(method = "lm")
+
+
+by_carat_color <- ldiamonds %>% group_by(lcarat, color) %>%
+  summarise(price = mean(price), rel_price = mean(rel_price))
+
+ggplot(by_carat_color, aes(lcarat, rel_price)) + geom_point()  + geom_smooth(method = "lm")
+
+
+by_carat_clarity <- ldiamonds %>% group_by(lcarat, clarity) %>%
+  summarise(price = mean(price), rel_price = mean(rel_price))
+
+ggplot(by_carat_clarity, aes(lcarat, rel_price)) + geom_point()  + geom_smooth(method = "lm")
+
+
+```
+
+## I made an unsupported assertion that lower-quality diamonds tend to be larger. Support my claim with a plot.
+
+
+```{r}
+levels(diamonds$cut)
+levels(diamonds$clarity)
+levels(diamonds$color)
+
+ggplot(diamonds, aes(log(carat), fill = clarity)) + geom_histogram()
+ggplot(diamonds, aes(log(carat), fill = color)) + geom_histogram()
+ggplot(diamonds, aes(log(carat), fill = cut)) + geom_histogram()
+
+ggplot(diamonds, aes(carat, clarity, fill = clarity)) + geom_bin2d()
+ggplot(diamonds, aes(carat, cut, fill = cut)) + geom_bin2d()
+ggplot(diamonds, aes(carat, color, fill = color)) + geom_bin2d()
+
+
+ggplot(diamonds) +  geom_smooth(method = 'lm', aes(carat, color)) 
+ggplot(diamonds) +  geom_smooth(method = 'lm', aes(carat, clarity))
+ggplot(diamonds) +  geom_smooth(method = 'lm', aes(carat, cut))
+
+
+ggplot(diamonds, aes(log(carat), color=cut)) + geom_density()
+ggplot(diamonds, aes(log(carat), color=clarity)) + geom_density()
+ggplot(diamonds, aes(log(carat), color=color)) + geom_density()
+
+
+```
+How do depth and table relate to the relative price?
+
+
+# Depth - no linear relationship
+
+```{r}
+ggplot(diamonds, aes(depth, price)) + 
+  geom_bin2d() + 
+  geom_smooth(method = "lm", se = FALSE, size = 2)
+
+ggplot(diamonds, aes(log(depth), log(price))) + 
+  geom_bin2d() + 
+  geom_smooth(method = "lm", se = FALSE, size = 2)
+
+model <- lm(log(price) ~ depth, data = diamonds)
+coef(summary(model))
+
+m_diamonds <- diamonds %>% mutate(rel_price = resid(model))
+ggplot(m_diamonds, aes(depth, rel_price)) + geom_bin2d()
+
+
+```
+
+```{r}
+ggplot(diamonds, aes(carat, price)) + 
+  geom_bin2d() + 
+  geom_smooth(method = "lm", se = FALSE, size = 2, color = "Yellow")
+
+ldiamonds <- diamonds %>% mutate(lcarat = log(carat), lprice = log(price))
+
+model <- lm(lprice ~ lcarat, data = ldiamonds)
+coef(summary(model))
+
+ldiamonds <- ldiamonds %>% mutate(rel_price = resid(model))
+
+by_carat_depth <- ldiamonds %>% group_by(lcarat, depth) %>%
+  summarise(price = mean(price), rel_price = mean(rel_price))
+
+ggplot(by_carat_depth, aes(lcarat, rel_price)) + geom_point() + geom_smooth(method = "lm")
+
+
+by_carat_table <- ldiamonds %>% group_by(lcarat, table) %>%
+  summarise(price = mean(price), rel_price = mean(rel_price))
+
+ggplot(by_carat_table, aes(lcarat, rel_price)) + geom_point() + geom_smooth(method = "lm")
+```
+

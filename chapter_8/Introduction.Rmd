@@ -1,0 +1,155 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+The ggplot2 theme system allows you to exercise fine control over the non-data elements of your plot.
+
+
+The theming system is composed of four main components:
+
+Theme elements specify the non-data elements that you can control. For example, the plot.title element controls the appearance of the plot title; axis.ticks.x, the ticks on the x axis; legend.key.height, the height of the keys in the legend.
+
+Each element is associated with an element function, which describes the visual properties of the element. For example, element_text() sets the font size, colour and face of text elements like plot.title.
+
+The theme() function which allows you to override the default theme elements by calling element functions, like theme(plot.title = element_text(colour = "red")).
+
+Complete themes, like theme_grey() set all of the theme elements to values designed to work together harmoniously.
+
+```{r}
+base <- ggplot(mpg, aes(cty, hwy, color = factor(cyl))) +
+  geom_jitter() + 
+  geom_abline(colour = "grey50", size = 2)
+base
+```
+
+
+
+# Labelling
+
+```{r}
+labelled <- base +
+  labs(
+    x = "City mileage/gallon",
+    y = "Highway mileage/gallon",
+    colour = "Cylinders",
+    title = "Highway and city mileage are highly correlated"
+  ) +
+  scale_colour_brewer(type = "seq", palette = "Spectral")
+labelled
+```
+
+# Style
+```{r}
+styled <- labelled +
+  theme_bw() + 
+  theme(
+    plot.title = element_text(face = "bold", size = 12),
+    legend.background = element_rect(fill = "white", size = 4, colour = "white"),
+    legend.justification = c(0, 1),
+    legend.position = c(0, 1),
+    axis.ticks = element_line(colour = "grey70", size = 0.2),
+    panel.grid.major = element_line(colour = "grey70", size = 0.2),
+    panel.grid.minor = element_blank()
+  )
+styled
+```
+
+
+# Complete Themes
+```{r}
+df <- data.frame(x = 1:3, y = 1:3)
+base <- ggplot(df, aes(x, y)) + geom_point()
+base + theme_grey() + ggtitle("theme_grey()")
+base + theme_bw() + ggtitle("theme_bw()")
+base + theme_linedraw() + ggtitle("theme_linedraw()")
+base + theme_light() + ggtitle("theme_light()")
+base + theme_dark() + ggtitle("theme_dark()")
+base + theme_minimal()  + ggtitle("theme_minimal()")
+base + theme_classic() + ggtitle("theme_classic()")
+base + theme_void() + ggtitle("theme_void()")
+
+```
+```{r}
+library(ggthemes)
+base + theme_tufte() + ggtitle("theme_tufte()")
+base + theme_solarized() + ggtitle("theme_solarized()")
+base + theme_excel() + ggtitle("theme_excel()") # ;)
+```
+
+### Exercises
+
+
+Exercises
+
+Try out all the themes in ggthemes. Which do you like the best?
+
+What aspects of the default theme do you like? What don't you like?
+What would you change?
+
+Look at the plots in your favourite scientific journal. What theme do they most resemble? What are the main differences?
+
+
+
+
+# Labels and Headings
+```{r}
+base_t <- base + labs(title = "This is a ggplot") + xlab(NULL) + ylab(NULL)
+base_t + theme(plot.title = element_text(size = 16))
+base_t + theme(plot.title = element_text(face = "bold", colour = "red"))
+base_t + theme(plot.title = element_text(hjust = 1))
+```
+
+# Margins
+```{r}
+base_t + theme(plot.title = element_text(margin = margin()))
+base_t + theme(plot.title = element_text(margin = margin(t = 10, b = 10)))
+base_t + theme(axis.title.y = element_text(margin = margin(r = 10)))
+```
+
+
+# Customise the grid
+```{r}
+base + theme(panel.grid.major = element_line(colour = "black"))
+base + theme(panel.grid.major = element_line(size = 2))
+base + theme(panel.grid.major = element_line(linetype = "dotted"))
+
+```
+
+
+# Background fill
+```{r}
+base + theme(plot.background = element_rect(fill = "grey80", colour = NA))
+base + theme(plot.background = element_rect(colour = "red", size = 2))
+base + theme(panel.background = element_rect(fill = "linen"))
+```
+
+```{r}
+base
+last_plot() + theme(panel.grid.minor = element_blank())
+last_plot() + theme(panel.grid.major = element_blank())
+
+last_plot() + theme(panel.background = element_blank())
+last_plot() + theme(
+  axis.title.x = element_blank(), 
+  axis.title.y = element_blank()
+)
+last_plot() + theme(axis.line = element_line(colour = "grey50"))
+
+```
+
+
+
+```{r}
+old_theme <- theme_update(
+  plot.background = element_rect(fill = "lightblue3", colour = NA),
+  panel.background = element_rect(fill = "lightblue", colour = NA),
+  axis.text = element_text(colour = "linen"),
+  axis.title = element_text(colour = "linen")
+)
+base
+theme_set(old_theme)
+base
+```
+
