@@ -1,0 +1,40 @@
+---
+title: "Chapter 11 - Observation Level Data"
+author: "Wal McConnell"
+date: "9/3/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#
+
+```{r}
+models <- txhousing %>% 
+  group_by(city) %>%
+  do(mod = lm(
+    log2(sales) ~ factor(month), 
+    data = ., 
+    na.action = na.exclude
+  ))
+models
+
+
+obs_sum <- models %>% augment(mod)
+obs_sum
+
+
+ggplot(obs_sum, aes(.std.resid)) + 
+  geom_histogram(binwidth = 0.1)
+ggplot(obs_sum, aes(abs(.std.resid))) + 
+  geom_histogram(binwidth = 0.1)
+
+obs_sum %>% 
+  filter(abs(.std.resid) > 2) %>%
+  group_by(city) %>%
+  summarise(n = n(), avg = mean(abs(.std.resid))) %>%
+  arrange(desc(n))
+```
+

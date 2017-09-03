@@ -1,0 +1,163 @@
+---
+title: "Chapter 11 - Coefficient Level Summaries"
+author: "Wal McConnell"
+date: "9/3/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(broom)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+The model fit summaries suggest that there are some important differences in seasonality between the different cities
+
+
+```{r}
+filtered <- txhousing %>% filter(city %in% c('Bryan-College Station', 'Galveston', 'San Marcos', 
+                                             'McAllen', 'Harlington', 'Brownsville'))
+
+ggplot(filtered, aes(date, sales)) + 
+  geom_line(aes(group = city, color = city), alpha = 1/2)
+```
+
+
+
+
+```{r}
+models <- txhousing %>% 
+  group_by(city) %>%
+  do(mod = lm(
+    log2(sales) ~ factor(month), 
+    data = ., 
+    na.action = na.exclude
+  ))
+models
+
+coefs <- models %>% tidy(mod)
+coefs
+
+months <- coefs %>%
+  filter(grepl("factor", term)) %>%
+  tidyr::extract(term, "month", "(\\d+)", convert = TRUE)
+months
+
+ggplot(months, aes(month, 2 ^ estimate)) +
+  geom_line(aes(group = city))
+
+coef_sum <- months %>%
+  group_by(city) %>%
+  summarise(max = max(estimate))
+
+ggplot(coef_sum, aes(2 ^ max, reorder(city, max))) + 
+  geom_point()
+```
+
+# Exercises
+
+# Broom / Tidy method
+
+```{r}
+test_model <- lm(log(sales) ~ factor(month), data = txhousing)
+test_model
+tidy(test_model)
+```
+
+## Question 1 - Highest and Lowest Seasonal Effect
+
+```{r}
+models <- txhousing %>% 
+  group_by(city) %>%
+  do(mod = lm(
+    log(sales) ~ factor(month), 
+    data = ., 
+    na.action = na.exclude
+  ))
+
+coefficients <- models %>% 
+  tidy(mod) %>% filter(grepl("factor", term)) %>%
+  tidyr::extract(term, "month", "(\\d+)", convert = TRUE)
+
+coefficients_by_city <- months %>%
+  group_by(city) %>%
+  summarise(max = max(estimate)) %>% 
+  arrange(max)
+
+lowest_3_cities <- head(coefficients_by_city, 3)$city
+city <- lowest_3_cities[1]
+ggplot(coefficients %>% filter(city == city), aes(month, estimate)) + geom_boxplot()
+ggplot(coefficients %>% filter(city == city), aes(month, std.error)) + geom_boxplot()
+ggplot(coefficients %>% filter(city == city), aes(month, statistic)) + geom_boxplot()
+ggplot(coefficients %>% filter(city == city), aes(month, p.value)) + geom_boxplot()
+
+city <- lowest_3_cities[2]
+ggplot(coefficients %>% filter(city == city), aes(month, estimate)) + geom_boxplot()
+ggplot(coefficients %>% filter(city == city), aes(month, std.error)) + geom_boxplot()
+ggplot(coefficients %>% filter(city == city), aes(month, statistic)) + geom_boxplot()
+ggplot(coefficients %>% filter(city == city), aes(month, p.value)) + geom_boxplot()
+
+
+city <- lowest_3_cities[3]
+ggplot(coefficients %>% filter(city == city), aes(month, estimate)) + geom_boxplot()
+ggplot(coefficients %>% filter(city == city), aes(month, std.error)) + geom_boxplot()
+ggplot(coefficients %>% filter(city == city), aes(month, statistic)) + geom_boxplot()
+ggplot(coefficients %>% filter(city == city), aes(month, p.value)) + geom_boxplot()
+
+
+highest_3_cities <- tail(coefficients_by_city, 3)$city
+city <- highest_3_cities[1]
+ggplot(coefficients %>% filter(city == city), aes(month, estimate)) + geom_point() + geom_boxplot()
+ggplot(coefficients %>% filter(city == city), aes(month, std.error)) + geom_point() + geom_boxplot()
+ggplot(coefficients %>% filter(city == city), aes(month, statistic)) + geom_point() + geom_boxplot()
+ggplot(coefficients %>% filter(city == city), aes(month, p.value)) + geom_point() + geom_boxplot()
+
+
+
+```
+
+
+
+## Question 2
+
+```{r}
+model_sum <- models %>% glance(mod)
+coef_sum %>% left_join(model_sum %>% select(city, r.squared)) %>% 
+
+ggplot(aes(max, r.squared)) + 
+    geom_point() + 
+    geom_smooth(method = "lm", se = F)
+```
+
+
+# Question 3
+
+The cities with the strongest seasonal effect are College Station and San Marcos (both college towns) and Galveston and South Padre Island (beach cities). It makes sense that these cities would have very strong seasonal effects.
+
+```{r}
+txhousing
+```
+
+## Question 4
+
+Group the diamonds data by cut, clarity and colour. Fit a linear model log(price) ~ log(carat). What does the intercept tell you? What does the slope tell you? How do the slope and intercept vary across the groups? Answer with a plot.
+
+
+```{r}
+model_grouped_diamonds_data <- diamonds %>% 
+  group_by(cut, clarity, color) %>%
+  do(model = lm(log(price) ~ log(carat), data = ., na.action = na.exclude))
+
+
+
+coefficients <- model_grouped_diamonds_data %>% tidy(model)
+
+
+
+
+
+
+```
+

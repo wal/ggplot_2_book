@@ -1,0 +1,128 @@
+---
+title: "Chapter 11 - Model Level Summaries"
+author: "Wal McConnell"
+date: "9/3/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(broom)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Model Level Summary
+
+
+```{r}
+city_models <- txhousing %>% 
+  group_by(city) %>%
+  do(mod = lm(
+    log2(sales) ~ factor(month), 
+    data = ., 
+    na.action = na.exclude
+  ))
+city_models
+
+city_model_summaries <- city_models %>% glance(mod)
+city_model_summaries
+
+
+ggplot(city_model_summaries, aes(r.squared, reorder(city, r.squared))) + 
+  geom_point()
+
+top3 <- c("Bryan-College Station", "Lubbock", "NE Tarrant County")
+bottom3 <- c("McAllen", "Brownsville", "Harlingen")
+extreme <- txhousing %>% ungroup() %>%
+  filter(city %in% c(top3, bottom3), !is.na(sales)) %>%
+  mutate(city = factor(city, c(top3, bottom3)))
+
+ggplot(extreme, aes(month, log(sales))) + 
+  geom_line(aes(group = year)) + 
+  facet_wrap(~city)
+
+```
+
+
+The cities with low $R^2$ have weaker seasonal patterns and more variation between years. The data for Harlingen seems particularly noisy.
+
+
+## Exercises
+
+# Do your conclusions change if you use a different measurement of model fit like AIC or deviance? Why/why not?
+
+
+## What do these numbers mean ? 
+
+```{r}
+ggplot(city_model_summaries, aes(AIC, reorder(city, AIC))) + geom_point()
+ggplot(city_model_summaries, aes(deviance, reorder(city, deviance))) + geom_point()
+ggplot(city_model_summaries, aes(p.value, reorder(city, p.value))) + geom_point()
+```
+
+
+One possible hypothesis that explains why McAllen, Harlingen and Brownsville have lower R2 is that they’re smaller towns so there are fewer sales and more noise. Confirm or refute this hypothesis.
+
+```{r}
+top3 <- c("Bryan-College Station", "Lubbock", "NE Tarrant County")
+bottom3 <- c("McAllen", "Brownsville", "Harlingen")
+extreme <- txhousing %>% ungroup() %>%
+  filter(city %in% c(top3, bottom3), !is.na(sales)) %>%
+  mutate(city = factor(city, c(top3, bottom3)))
+
+ggplot(extreme, aes(month, sales)) + 
+  geom_line(aes(group = year)) + 
+  facet_wrap(~city,scales = "free" )
+
+```
+
+McAllen, Harlingen and Brownsville seem to have much more year-to- year variation than Midland, Irving and Denton County. How does the model change if you also include a linear trend for year? (i.e. log(sales) ~ factor(month) + year).
+
+it improves for the smaller sales cities, reduces for biggersales cities
+
+
+```{r}
+top3 <- c("Bryan-College Station", "Lubbock", "NE Tarrant County")
+bottom3 <- c("McAllen", "Brownsville", "Harlingen")
+
+extreme <- txhousing %>% ungroup() %>%
+  filter(city %in% c(top3, bottom3), !is.na(sales)) %>%
+  mutate(city = factor(city, c(top3, bottom3)))
+
+models <- extreme %>%
+  group_by(city) %>%
+  do(mod = lm(log(sales) ~ factor(month), data = ., na.action = na.exclude)) 
+
+model_sum <- models %>% glance(mod)
+
+ggplot(model_sum, aes(r.squared, reorder(city, r.squared))) + geom_point()
+
+
+models <- extreme %>%
+  group_by(city) %>%
+  do(mod = lm(log(sales) ~ factor(month) + year, data = ., na.action = na.exclude)) 
+
+model_sum <- models %>% glance(mod)
+
+ggplot(model_sum, aes(r.squared, reorder(city, r.squared))) + geom_point()
+
+
+```
+
+ Create a faceted plot that shows the seasonal patterns for all cities. Order the facets by the R2 for the city.
+ 
+```{r}
+data("txhousing")
+models <- txhousing %>%
+  group_by(city) %>%
+  do(mod = lm(log(sales) ~ factor(month), data = ., na.action = na.exclude)) 
+
+cities_by_r_squared <- model_sum <- models %>% glance(mod) %>% arrange(r.squared) %>% select(city)
+summary(cities_by_r_squared)
+summary(unique(txhousing$city))
+
+txhousing$city_f <- factor(txhousing$city, levels = cities_by_r_squared$city)
+
+ggplot(txhousing, aes(month, log(sales))) + 
+  geom_line(aes(group = year)) + 
+  facet_wrap(~city_f)
+```

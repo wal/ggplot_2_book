@@ -1,0 +1,152 @@
+---
+title: "Chapter 11 - Texas Housing Data"
+author: "Wal McConnell"
+date: "9/3/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Texas Housing Data
+
+```{r}
+ggplot(txhousing, aes(date, sales)) + 
+  geom_line(aes(group = city), alpha = 1/2)
+```
+ ## Long Term Trend ?
+ 
+ 2 factors make this hard to see 
+ 
+ 1. Range of values variaes over multiple orders of magnititude
+ 2. Strong seasonal trend
+ 
+ 
+ ]
+```{r}
+ggplot(txhousing, aes(date, log(sales))) + 
+  geom_line(aes(group = city), alpha = 1/2)
+```
+### Abeline - Trend Removal
+
+```{r}
+abilene <- txhousing %>% filter(city == "Abilene")
+ggplot(abilene, aes(date, log(sales))) + geom_line()
+
+mod <- lm(log(sales) ~ factor(month), data = abilene)
+abilene$rel_sales <- resid(mod)
+ggplot(abilene, aes(date, rel_sales)) + geom_line()
+```
+
+```{r}
+deseas <- function(x, month) {
+  resid(lm(x ~ factor(month), na.action = na.exclude))
+}
+
+txhousing <- txhousing %>% 
+  group_by(city) %>% 
+  mutate(rel_sales = deseas(log(sales), month))
+
+ggplot(txhousing, aes(date, rel_sales)) +
+  geom_line(aes(group = city), alpha = 1/5) + 
+  geom_line(stat = "summary", fun.y = "mean", colour = "red")
+```
+
+### By Quarter
+
+```{r}
+txhousing <- txhousing %>% mutate(quarter = round(month / 4) + 1)
+
+txhousing <- txhousing %>%
+  group_by(city) %>%
+  mutate(rel_sales = resid(lm(log(sales) ~ factor(quarter), na.action = na.exclude)))
+
+ggplot(txhousing, aes(date, rel_sales)) +
+  geom_line(aes(group = city), alpha = 1/5) +
+  geom_line(stat = "summary", fun.y = "mean", colour = "red")
+```
+
+### By Year
+
+```{r}
+txhousing <- txhousing %>%
+  group_by(city) %>%
+  mutate(rel_sales = resid(lm(log(sales) ~ factor(year), na.action = na.exclude)))
+
+
+ggplot(txhousing, aes(date, rel_sales)) +
+  geom_line(aes(group = city), alpha = 1/5) +
+  geom_line(stat = "summary", fun.y = "mean", colour = "red")
+```
+
+
+# 2010 dip
+
+```{r}
+library(zoo)
+txhousing_grouped_by_year_month <- txhousing %>% 
+  group_by(year, month) %>% 
+  summarise(sales = mean(sales, na.rm = TRUE)) %>%
+  mutate(date = as.Date(as.yearmon(paste(year, month, sep="-"))))
+
+ggplot(txhousing_grouped_by_year_month, aes(date, sales)) + geom_line(alpha = 1/5)
+```
+
+# Other variables with seasonal effects
+
+```{r}
+data(txhousing)
+
+
+ggplot(txhousing, aes(date, log(volume))) + geom_line(aes(group = city), alpha = 1/2)
+ggplot(txhousing, aes(date, log(listings))) + geom_line(aes(group = city), alpha = 1/2)
+ggplot(txhousing, aes(date, inventory)) + geom_line(aes(group = city), alpha = 1/2)
+
+```
+### Remove seasonality from volume
+
+```{r}
+ggplot(txhousing, aes(date, log(volume))) + geom_line(aes(group = city), alpha = 1/2)
+
+
+txhousing <- txhousing %>%
+  group_by(city) %>%
+  mutate(rel_volume = resid(lm(log(volume) ~ factor(month), na.action = na.exclude)))
+
+
+ggplot(txhousing, aes(date, rel_volume)) +
+  geom_line(aes(group = city), alpha = 1/5) +
+  geom_line(stat = "summary", fun.y = "mean", colour = "blue")
+```
+
+```{r}
+data(txhousing)
+ggplot(txhousing, aes(date, listings)) + geom_line(aes(group = city), alpha = 1/2)
+
+txhousing <- txhousing %>%
+  group_by(city) %>%
+  mutate(rel_listings = resid(lm(listings ~ factor(month), na.action = na.exclude)))
+
+ggplot(txhousing, aes(date, rel_listings)) +
+  geom_line(aes(group = city), alpha = 1/5) +
+  geom_line(stat = "summary", fun.y = "mean", colour = "green")
+```
+
+
+### cities with incomplete time series
+
+```{r}
+data(txhousing)
+
+
+
+incomplete_cases <- txhousing %>% filter(!complete.cases(.))
+
+incomplete_cases_by_city <- incomplete_cases %>% group_by(city) %>% summarise(count = n()) %>% arrange(count)
+
+ggplot(incomplete_cases_by_city, aes(city, count)) + 
+  geom_bar(stat = "identity") + 
+  coord_flip()
+
+```

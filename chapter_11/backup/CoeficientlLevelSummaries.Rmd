@@ -1,0 +1,55 @@
+---
+title: "Coefficient Level Summaries"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(broom)
+```
+
+
+```{r}
+data_to_model <- txhousing %>% 
+  mutate(lsales = log(sales)) %>% 
+  select(city, lsales, month)
+
+data_to_model$month = factor(data_to_model$month)
+```
+
+
+```{r}
+models_by_city <- data_to_model %>% 
+  group_by(city) %>%
+  do(model = lm(lsales ~ month, 
+                data = ., 
+                na.action = na.exclude))
+```
+
+The model fit summaries suggest that there are some important differences in seasonality between the different cities. 
+
+```{r}
+coefficients <- models_by_city %>% tidy(model)
+coefficients
+```
+The Month effect
+
+```{r}
+months <- coefficients %>%
+  filter(grepl("month", term)) %>%
+  tidyr::extract(term, "month", "(\\d+)", convert = TRUE)
+months
+
+ggplot(months, aes(month, exp(estimate), color = city)) + geom_line(aes(group = city))
+
+```
+
+```{r}
+coef_sum <- months %>% 
+  group_by(city) %>%
+  summarise(max = max(estimate))
+
+ggplot(coef_sum, aes(max, reorder(city, max))) +
+  geom_point()
+```
+
